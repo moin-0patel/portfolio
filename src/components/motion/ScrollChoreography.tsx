@@ -466,21 +466,55 @@ export function ScrollChoreography() {
           }
 
           /*
-           * PORTRAIT: in the recording it barely moves — no meaningful scale,
-           * no early fade. It holds the centre at full presence while the
-           * rail forms and the About content rolls straight over it, and it
-           * is still clearly visible several sections later. So: a whisper of
-           * scale (1.06) during the reorganisation, and a late, partial fade
-           * to 0.45 — present enough to stay the composition's anchor,
-           * recessed enough that the statement set over it stays legible
-           * (verify:ui's overlay-contrast sweep is the check on that). No
-           * blur — the recording's blur is a privacy edit, proven against
-           * the Phase 0 stills.
+           * PORTRAIT DISSOLVE — corrected 2026-09-01 against the LIVE
+           * reference, measured with real wheel input on heynesh.com.
+           *
+           * The earlier ruling here ("no blur — the recording's blur is a
+           * privacy edit") was WRONG. The live site's portrait is a fixed
+           * layer that progressively blurs with scroll — ~12px within the
+           * first 160px of travel, ~50px by half a viewport, capping at
+           * blur(90px) — while opacity eases 1 -> 0.30, and it then PERSISTS
+           * at that 90px/0.30 atmospheric wash for the entire page. It never
+           * translates and never scales (the 1.001 is the known static
+           * artifact). The Phase 0 stills only looked sharp because they were
+           * sampled at rest, where the blur is genuinely 0.
+           *
+           * Ours adapts rather than copies the numbers: the reference's
+           * portrait is a full-viewport backdrop, ours is THE subject — a
+           * ~500px cut-out — so 90px would annihilate it. The owner's brief
+           * asks for it to stay recognisable through the majority of the
+           * transition, so the dissolve is staged: gentle (6px) through the
+           * reorganisation, deepening as the headline exits, and only
+           * reaching its heaviest step with the final opacity drop to the
+           * reference's measured 0.30 floor — by which point the statement
+           * is rolling over it and the blur actively helps that text read.
+           * Mobile keeps roughly half the radius and a higher floor: at
+           * 390px the figure fills most of the frame and a heavy blur wipes
+           * the composition instead of dissolving it.
+           *
+           * Blur is applied to this one wrapper only — never the section,
+           * never text — and will-change is declared at arm time so the
+           * filter gets its own layer instead of repainting the stage.
            */
           if (figure) {
-            gsap.set(figure, { transformOrigin: 'center bottom' })
+            const softBlur = !window.matchMedia('(min-width: 1024px)').matches
+            gsap.set(figure, {
+              transformOrigin: 'center bottom',
+              filter: 'blur(0px)',
+              willChange: 'filter, opacity, transform',
+            })
             morph.to(figure, { scale: 1.06, duration: 0.4 }, 0)
-            morph.to(figure, { opacity: 0.45, duration: 0.4 }, 0.55)
+            morph.to(figure, { filter: softBlur ? 'blur(3px)' : 'blur(6px)', duration: 0.3 }, 0.2)
+            morph.to(figure, { filter: softBlur ? 'blur(8px)' : 'blur(16px)', duration: 0.25 }, 0.5)
+            morph.to(
+              figure,
+              {
+                filter: softBlur ? 'blur(13px)' : 'blur(26px)',
+                opacity: softBlur ? 0.4 : 0.3,
+                duration: 0.25,
+              },
+              0.75,
+            )
           }
 
           // Identity plate: the spec's §4 ch01 recede, early in the morph.
@@ -574,6 +608,57 @@ export function ScrollChoreography() {
                 start: 'top 96%',
                 end: 'top 78%',
                 scrub: 0.8,
+                invalidateOnRefresh: true,
+              },
+            },
+          )
+        }
+
+        /*
+         * THE WORK BRIDGE — cream to #131313 and back, scrubbed.
+         *
+         * The dark Work plate is OUR measured decision, not the reference's:
+         * the live site stays cream end to end (measured 2026-09-01, wheel
+         * sweep at 10-60% of the document). The owner keeps the plate, so the
+         * hard edge is what goes: the ground darkens as the section
+         * approaches — mostly dark before the heading's own reveal fires at
+         * 85% — and lightens again only as its bottom leaves, when the cards
+         * are already above the fold. Two fromTo tweens on one property with
+         * immediateRender off: each owns its scroll window, the inline value
+         * between them is the plate's own #131313, and both reverse cleanly.
+         * Everything inside the section (cards, scrim, CTA disc, type) is
+         * untouched.
+         */
+        const work = document.querySelector<HTMLElement>('#featured-projects')
+        if (work && work.classList.contains('work-ground')) {
+          gsap.fromTo(
+            work,
+            { backgroundColor: '#d5cfbe' },
+            {
+              backgroundColor: '#131313',
+              ease: 'none',
+              immediateRender: false,
+              scrollTrigger: {
+                trigger: work,
+                start: 'top 98%',
+                end: 'top 68%',
+                scrub: 0.5,
+                invalidateOnRefresh: true,
+              },
+            },
+          )
+          gsap.fromTo(
+            work,
+            { backgroundColor: '#131313' },
+            {
+              backgroundColor: '#d5cfbe',
+              ease: 'none',
+              immediateRender: false,
+              scrollTrigger: {
+                trigger: work,
+                start: 'bottom 45%',
+                end: 'bottom 2%',
+                scrub: 0.5,
                 invalidateOnRefresh: true,
               },
             },
